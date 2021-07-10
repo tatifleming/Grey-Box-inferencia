@@ -1,0 +1,157 @@
+#### KNN REGRESSÃO SEM SELEÇÃO DE ATRIBUTOS
+
+#####depois de dividir o conjunto de dados em treino e teste #4
+
+# Separar atributos preditores(X) do atributo meta (y)
+y = df.tch
+X = df.drop(['tch'], axis=1)
+
+# Criar X_train, X_test, y_train, y_test com as proporções 70/30
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=2021)
+
+#### depois de verificar se há necessidade de normalizar #3
+# Verificar se há necessidade de normalizar. 
+# Têm escalas muito diferentes?
+# Identificar se preciso normalizar
+df.describe()
+
+# Olhar valores mínimo e máximo, suas variações, se tiver em ordens de grandeza muito
+#diferentes, é preciso normalizar
+# Se tiver dummy, normalmente vamos precisar normalizar
+
+# Normalizar Z-score (Média 0 e Desvio Padrão 1). Usar sklearn.preprocessing StandardScaler (já importado no início do script)
+# O Z-Score é melhor para trabalhar quando temos varáveis categóricas
+# Fazer a normalização no conjunto de treino (X_train) e usar a mesma 'transformação' no conjunto de teste (X_teste)
+# Passo 1: Definir o 'scaler' no X_train
+#scaler é meu objeto
+scaler = StandardScaler().fit(X_train)
+#só ajustou
+X_train_norm = pd.DataFrame(scaler.transform(X_train), columns = X_train.columns)
+# Passo 2: Usar no X_test a mesma operação feita para a normalização de X_train
+X_test_norm = pd.DataFrame(scaler.transform(X_tst), columns = X_test.columns)
+
+scaler.transform(X_train)
+# todos os valores entram num array, mas quero num df
+
+pd.DataFrame(scaler.transform(X_train), columns = X_train.columns)
+
+X_train_norm = pd.DataFrame(scaler.transform(X_train), columns = X_train.columns)
+# Passo 2: Usar no X_test a mesma operação feita para a normalização de X_train
+X_test_norm = pd.DataFrame(scaler.transform(X_test), columns = X_test.columns)
+
+
+#### OTIMIZAR HIPERPARÂMETRO K
+
+#GridSearch CV
+
+# Cronometrar o tempo de execução (mostra o tempo usado)
+%%time
+
+# Passo 1: Definir a faixa do grid em que o hiperparâmetro vai variar
+# IMPORTANTE: No sklearn o grid tem formato de 'dictionary' {'label':valor}
+faixa_K = {'n_neighbors':np.arange(7,16)}
+
+# Passo 2: Definir o objeto com a técnica e os parâmetros da otimização
+knn_gsearch = GridSearchCV(KNeighborsRegressor(),
+                           param_grid=faixa_K, 
+                           cv=5)
+#estou definindo o parâmetro que quero que faça o grid, defino o regresso, e falando
+#para fazer validação cruzada 5
+
+#pega o conjunto e divide e faz uma validação cruzada para cada um
+
+# Passo 3: Otimizar o objeto definido anteriormente no conjunto de dados
+
+knn_gsearch.fit(X_train_norm, y_train)
+
+# Passo 4: Apresentar o melhor K (K quando se obteve o melhor resultado)
+opt_K = knn_gsearch.best_params_
+print(opt_K)
+
+# KNN é rápido e é só um parâmetro, há outros que são mais complicados
+# Cross validation para cada k e pegou a média desses e valou, quando k for igual a nº seria uma média (...)
+
+# Otimizado o hiperparâmetro
+%%time
+# Passo 1: Criar um objeto e ajustar o objeto ao Conjunto de Treino, utilizando o hiperparâmetro ótimo
+# a média que ele faz deve ser em relação ao MAE
+knn = KNeighborsRegressor(n_neighbors=opt_K['n_neighbors']).fit(X_train_norm, y_train)
+
+# Passo 2: Fazer predição do modelo no Conjunto de Teste
+y_pred = knn.predict(X_test_norm)
+
+# Passo 3: Avaliar o modelo, calculando R2, MAE e RMSE
+# é bom dizer de qual técnica vem cada métrica
+r2_knn = r2_score(y_test, y_pred)
+mae_knn = mean_absolute_error(y_test, y_pred)
+rmse_knn = np.sqrt(mean_squared_error(y_test, y_pred))
+
+print('R2 = ',r2_knn)
+print('MAE = ', mae_knn)
+print('RMSE = ', rmse_knn)
+
+# A título de comparação, vamos utilizar o 'Dummy Regressor' do Scikit-learn
+# Regressor idiota 
+# Importar 'DummyRegressor' do componente 'dummy' do sklearn
+
+from sklearn.dummy import  DummyRegressor
+
+# Criar objeto definindo estratégia para estimativa e ajustar ao conjunto de treino
+dummy = DummyRegressor(strategy='mean').fit(X_train_norm, y_train) 
+
+# Fazer a predição no conjunto de teste utilizando o objeto definido e ajustado anteriormente
+y_pred_dummy = dummy.predict(X_test_norm)
+
+# Avaliar a estimativa feita com 'dummy' (R2, MAE e RMSE)
+r2_dummy = r2_score (y_test, y_pred_dummy)
+mae_dummy = mean_absolute_error (y_test, y_pred_dummy)
+rmse_dummy = np.sqrt(mean_absolute_error(y_test, y_pred_dummy))
+
+print('R2_dummy = ',r2_dummy)
+print('MAE_dummy = ', mae_dummy)
+print('RMSE_dummy = ', rmse_dummy)
+
+y_pred_dummy
+#isso tem que ser exatamente que y_train.mean()
+
+y_train.mean()
+
+
+
+#Randomized Search CV
+
+# Cronometrar o tempo de execução
+%%time
+
+# Passo 1: Definir a faixa do grid em que o hiperparâmetro vai variar e o número desejado de iterações
+# no gridsearch ando um por um
+# nesse não, eu crio uma faixo e ando nela
+# a ideia é fazer uma faixa razoavelmente grande, mas com a malha não muito grande, 
+#se fosse no grid seria herculeo, pois andaria 1 por 1
+#Formato dicionário
+
+faixa_K =  {'n_neighbors': np.arange[1,42]}
+niter = 15
+
+# niter é o número de vezes (interações)
+# se eu tiver 2 hiperparâmetros, um de 1 a 20, outro de (...)
+# se eu tiver com uma técnica muito lenta, escolho um grid maior
+
+# Passo 2: Definir o objeto com a técnica e os parâmetros da otimização
+knn_rsearch = RandomizedSearchCV(KNeighborsRegressor(),
+              param_distributions=faixa_K, 
+              n_iter = niter,
+              cv=5,
+              random_state=2021)
+
+
+# Passo 3: Otimizar o objeto definido anteriormente no conjunto de dados
+
+knn_rsearch.fit(X_train_norm, y_train)
+
+# Passo 4: Apresentar o melhor K (K quando se obteve o melhor resultado)
+opt_K = knn_rsearch.best_params_ 
+print(opt_K)
+
+#randomize ajuda a ganhar tempo
+#não preciso de um número exato do parâmetro, mas preciso de uma ordem de grandeza
