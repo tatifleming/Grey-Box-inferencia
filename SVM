@@ -48,3 +48,131 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
 # Importar 'DummyClassifier' e 'DummyRegressor' do componente 'dummy' do sklearn
 from sklearn.dummy import DummyClassifier, DummyRegressor
+
+
+############## O MODELO DE FATO
+
+correct_facies_labels = training_data['Facies'].values
+
+feature_vectors = training_data.drop(['Formation', 'Well Name', 'Depth','Facies','FaciesLabels'], axis=1)
+feature_vectors.describe()
+
+#Normalização  #3
+#Os atributos estão em diferentes faixas de valores, devido a isso, é necessario normalizar os atributos. Vamos usar a normalização padrão:
+#z=(x−μ)/σ 
+#onde:
+#μ  é a média, e  σ  é o desvio padrão
+
+from sklearn import preprocessing
+
+scaler = preprocessing.StandardScaler().fit(feature_vectors)
+scaled_features = scaler.transform(feature_vectors)
+pd.DataFrame(scaled_features).describe()
+
+# divisão do conjunto em treino e teste  #4
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+        scaled_features, correct_facies_labels, test_size=0.2, random_state=42)
+
+print("Conjunto de dados: \t\tX: {}, \t\tY:{}".format(scaled_features.shape, correct_facies_labels.shape))
+print("Conjunto de Treinamento: \tX_train: {}, \tY_train:{}".format(X_train.shape, y_train.shape))
+print("Conjunto de Teste: \t\tX_test: {}, \tY_test:{}".format(X_test.shape, y_test.shape))
+
+
+#####Treinamento do classificador SVM
+
+from sklearn import svm
+# Classificador SVM
+clf_SVM = svm.SVC()
+# Treinamento
+clf_SVM.fit(X_train,y_train)
+# Predição nos conjunto de teste
+predicted_labels_SVM = clf_SVM.predict(X_test)
+
+# Avaliação da predição
+
+from sklearn.metrics import confusion_matrix, plot_confusion_matrix
+
+conf_SVM = confusion_matrix(y_test, predicted_labels_SVM)
+fig, ax = plt.subplots(figsize=(8, 8))
+disp  = plot_confusion_matrix(clf_SVM, X_test, y_test, 
+                              display_labels=facies_labels, 
+                              cmap=plt.cm.Blues, 
+                              ax=ax)
+disp.ax_.set_title("Matriz de Confusão")
+print(disp)
+
+# Métricas de avaliação
+
+def accuracy(conf):
+    total_correct = 0.
+    nb_classes = conf.shape[0]
+    for i in np.arange(0,nb_classes):
+        total_correct += conf[i][i]
+    acc = total_correct/sum(sum(conf))
+    return acc
+
+def accuracy_adjacent(conf, adjacent_facies):
+    nb_classes = conf.shape[0]
+    total_correct = 0.
+    for i in np.arange(0,nb_classes):
+        total_correct += conf[i][i]
+        for j in adjacent_facies[i]:
+            total_correct += conf[i][j]
+    return total_correct / sum(sum(conf))
+ 
+
+# adjacent_facies[i] é um array com as fácies adjacentes.
+
+
+adjacent_facies = np.array([[1], [0,2], [1], [4], [3,5], [4,6,7], [5,7], [5,6,8], [6,7]], dtype="object")
+print('Facies classification accuracy = {}'.format(accuracy(conf_SVM)))
+print('Adjacent facies classification accuracy = {}'.format(accuracy_adjacent(conf_SVM, adjacent_facies)))
+
+# Busca dos melhores parâmetros
+
+from sklearn.model_selection import GridSearchCV
+
+param_grid = {'C': [0.1,1, 10], 
+              'gamma': [10,1,0.1],
+              'kernel': ['rbf', 'poly', 'sigmoid']}
+
+grid = GridSearchCV(svm.SVC(), param_grid, refit=True, verbose=2, n_jobs=-1)
+grid.fit(X_train,y_train)
+
+# print(grid.best_estimator_)
+grid_predictions = grid.predict(X_test)
+cv_conf = confusion_matrix(y_test, grid_predictions)
+
+print('Optimized facies classification accuracy = {}'.format(accuracy(cv_conf)))
+print('Optimized adjacent facies classification accuracy = {}'.format(accuracy_adjacent(cv_conf, adjacent_facies)))
+
+# Usando o modelo com novos dados
+
+well_data = pd.read_csv('validation_data_nofacies.csv')
+well_data['Well Name'] = well_data['Well Name'].astype('category')
+well_data
+
+# Normalização padrão
+
+well_features = well_data.drop(['Formation', 'Well Name', 'Depth'], axis=1)
+X_unknown = scaler.transform(well_features)
+
+#Predição
+
+y_unknown = clf_SVM.predict(X_unknown)
+well_data['Facies'] = y_unknown
+well_data
+
+# Nomes do poços
+well_data['Well Name'].unique()
+
+# Visualização dos resultados
+
+well_log = well_data[well_data['Well Name'] == 'STUART']
+make_facies_log_plot(well_log, facies_colors)
+
+well_log = well_data[well_data['Well Name'] == 'CRAWFORD']
+make_facies_log_plot(well_log, facies_colors)
