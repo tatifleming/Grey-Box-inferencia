@@ -1,0 +1,18 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Importar AgglomerativeClustering
+
+from sklearn.cluster import AgglomerativeClustering
+
+# Para plotar o dendograma
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+# Gerar grupos hierárquicos usando 'linkage'
+linked = linkage(X, method='complete')
+
+# Visualizar os grupos hierárquicos usando Dendograma
+plt.figure(figsize=(20, 7))
+dendrogram(linked,
+          distance_sort='descending')
