@@ -1,0 +1,76 @@
+# Cada nó da árvore é um neurônio de processamento de informação
+# O processamento da informação: inputs, dentritos que interferem o núcleo através de cargas elétricas, somatório, função de ativação que define a saída (reLU é a mais famosa), bia do neurônio, saída
+
+# Esse código é do treinamento do classificador RF em casos sísmicos (PUC-Rio) + FEAGRI Unicamp
+
+# ATENÇÃO!!! Antes de desenhar a árvore de decisão, podemos fazer as seguintes otimizações abaixo (ver no código acima em #004_Pré-Treino_tunning)
+# Calcular o 'Dummy' para ter como base de comparação com os outros modelos
+# 'Dummy' e KNN SEM normalizar
+# Otimizar Hiperparâmetro K utilizando GridSearchCV
+# Otimizar Hiperparâmetro K utilizando RandomizedSearchCV
+#'Dummy' e KNN COM normalização MIN-MAX
+# Otimizar Hiperparâmetro K utilizando GridSearchCV
+# Otimizar Hiperparâmetro K utilizando RandomizedSearchCV
+# 'Dummy' e KNN COM normalização Z-Score
+# Otimizar Hiperparâmetro K utilizando GridSearchCV
+# Otimizar Hiperparâmetro K utilizando RandomizedSearchCV
+
+# ÁRVORE DE DECISÃO
+# Árvore de Decisão SEM normalizar
+# Otimizar Hiperparâmetros 'max_depth', 'min_samples_split' e 'min_samples_leaf' utilizando GridSearchCV
+# Otimizar Hiperparâmetros 'max_depth', 'min_samples_split' e 'min_samples_leaf' utilizando RandomizedSearchCV 
+# Árvore de Decisão COM normalização MIN-MAX (verificar tópicos anteriores)
+# Otimizar Hiperparâmetros 'max_depth', 'min_samples_split' e 'min_samples_leaf' utilizando GridSearchCV
+# Otimizar Hiperparâmetros 'max_depth', 'min_samples_split' e 'min_samples_leaf' utilizando RandomizedSearchCV
+# Árvore de Decisão COM normalização Z-Score
+# Otimizar Hiperparâmetros 'max_depth', 'min_samples_split' e 'min_samples_leaf' utilizando GridSearchCV
+# Otimizar Hiperparâmetros 'max_depth', 'min_samples_split' e 'min_samples_leaf' utilizando RandomizedSearchCV
+
+# Desenhando a árvore
+
+from sklearn.tree import tree
+
+plot_tree(arv_acc_research_z)
+
+# Desenhar a Árvore de Decisão UM POUCO MAIOR
+# Aumentar o tamanho da figura e da fonte
+# Dar nomes aos atributos
+# Dar nomes às classes
+# Dar cor às classes
+# Salvar a figura
+
+
+
+### PUC Rio abaixo
+from sklearn.ensemble import RandomForestClassifier
+clf_RF = RandomForestClassifier(n_estimators=200)
+clf_RF.fit(X_train,y_train)
+predicted_labels_RF = clf_RF.predict(X_test)
+
+conf_RF = confusion_matrix(y_test, predicted_labels_RF)
+fig, ax = plt.subplots(figsize=(8, 8))
+disp  = plot_confusion_matrix(clf_RF, X_test, y_test, 
+                              display_labels=facies_labels, 
+                              cmap=plt.cm.Blues, values_format="d",
+                              ax=ax)
+disp.ax_.set_title("Matriz de Confusão")
+print(disp)
+
+adjacent_facies = np.array([[1], [0,2], [1], [4], [3,5], [4,6,7], [5,7], [5,6,8], [6,7]], dtype="object")
+
+print("SVM")
+print('Facies classification accuracy = {}'.format(accuracy(conf_SVM)))
+print('Adjacent facies classification accuracy = {}'.format(accuracy_adjacent(conf_SVM, adjacent_facies)))
+
+print("\nRF")
+print('Facies classification accuracy = {}'.format(accuracy(conf_RF)))
+print('Adjacent facies classification accuracy = {}'.format(accuracy_adjacent(conf_RF, adjacent_facies)))
+
+features_names = ["GR","ILD_log10","DeltaPHI","PHIND","PE","NM_M","RELPOS"]
+feature_importance = pd.Series(clf_RF.feature_importances_, index=features_names).sort_values(ascending=False)
+
+plt.barh(features_names, feature_importance)
+plt.title("Feature Importance")
+plt.ylabel("Features")
+plt.xlabel("Importance")
+plt.show()
