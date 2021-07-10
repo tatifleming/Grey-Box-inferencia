@@ -1,0 +1,75 @@
+# BASELINE, NO FREE LUNCH, VALIDAÇÃO CRUZADA
+
+# Leitura do conjunto de dados
+df = pd.read_csv('FA084-1s2021-TCH_Cana_Met.csv')
+df.head()
+
+# Excluir os registros com número de corte 7
+df = df.drop(df[df.estagio == 7].index)
+
+# Considerar apenas as variedades mais frequentes em cerca de 80% dos talhões e excluir as demais
+# OBS: Desconsiderar 'others'
+reter = df[df.variedade != 'others'].variedade.value_counts(1)[0:6].index.tolist()
+df = df[df.variedade.isin(reter)]
+
+# Separar atributos preditores(X) do atributo meta (y)
+y = df.tch
+X = df.drop('tch', axis=1)
+
+# Construir conjuntos de Treino e Test na proporção 70/30 (random_state = 2021)
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=0.3, random_state = 2021)
+
+# Separar atributos numéricos (X_train_num, X_test_num) e categóricos (X_train_cat, X_test_cat) dos conjuntos de treino e teste
+X_train_num = X_train.select_dtypes(include=np.number)
+X_train_cat = X_train.select_dtypes(exclude=np.number)
+X_test_num = X_test.select_dtypes(include=np.number)
+X_test_cat = X_test.select_dtypes(exclude=np.number)
+
+# Normalizar (Z-Score) os atributos preditores numéricos do conjunto de treino (X_train) e aplicar a mesma transformação no conjunto de teste (X_test)
+
+# Passo 1: Definir o 'scaler' no X_train_num
+scaler = StandardScaler().fit(X_train_num)
+X_train_num_norm = pd.DataFrame(scaler.transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
+# Passo 2: Usar no X_test a mesma operação feita para a normalização de X_train
+X_test_num_norm = pd.DataFrame(scaler.transform(X_test_num), columns=X_test_num.columns, index=X_test_num.index)
+
+# Codificar (One-Hot-Encoder) os atributos categóricos com 3 ou mais valores (variedade e solo)
+
+# Usar 'one-hot-encoder' do Pandas (get_dummies)
+to_ohe = ['variedade','solo']
+X_train_cat_ohe = pd.get_dummies(X_train_cat[to_ohe],prefix=['var','solo'])
+X_test_cat_ohe = pd.get_dummies(X_test_cat[to_ohe],prefix=['var','solo'])
+
+# Codificar (Label Encoder) os atributos categóricos com 2 valores (espac)
+# Usar 'Label Encoder' do Scikit-learn
+labEnc = LabelEncoder()
+labEnc.fit(X_train_cat.espac)
+X_train_cat_labEnc = pd.DataFrame(labEnc.transform(X_train_cat.espac),columns=['espac'], index=X_train_num.index)
+X_test_cat_labEnc = pd.DataFrame(labEnc.transform(X_test_cat.espac),columns=['espac'], index=X_test_num.index)
+
+# Juntando os DataFrames '_num' e '_cat' em um único DataFrame
+X_train_norm = pd.concat([X_train_num_norm, X_train_cat_ohe, X_train_cat_labEnc], axis=1)
+X_test_norm = pd.concat([X_test_num_norm, X_test_cat_ohe, X_test_cat_labEnc], axis=1)
+
+
+
+####### BASELINE REGRESSÃO
+
+# Estabelecimento de uma 'Baseline' para comparação do desempenho do modelo
+
+# Criar um objeto 'dummy' definindo estratégia para estimativa e ajustar ao conjunto de treino
+dummy = DummyRegressor(strategy='mean').fit(X_train,y_train)
+
+# Fazer a predição no conjunto de teste utilizando o objeto definido e ajustado anteriormente
+y_pred_dummy = dummy.predict(X_test)
+
+# Calcular R2, MAE e RMSE da 'Baseline' criada utilizando 'Dummy'
+r2_dummy = r2_score(y_test, y_pred_dummy)
+MAE_dummy = mean_absolute_error(y_test, y_pred_dummy)
+RMSE_dummy = np.sqrt(mean_squared_error(y_test, y_pred_dummy))
+
+# Apresentar os valores de R2, MAE e RMSE 'Dummy'
+print('R2 Dummy: ', r2_dummy)
+print('MAE Dummy:', MAE_dummy)
+print('RMSE Dummy', RMSE_dummy)
+© 2021 GitHub, Inc.
