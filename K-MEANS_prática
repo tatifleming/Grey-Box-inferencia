@@ -1,0 +1,82 @@
+# Leitura do dataset iris.csv
+# dica, colocar o caminho do arquivo do drive
+df = pd.read_csv('Aula11-iris.csv')
+df.head()
+
+# Excluir atributo 'Id' (variável não usada)
+df = df.drop(['Id'],axis=1)
+
+# Separar os atributos preditores (X) e o atributo meta (y)
+y = df.species
+X = df.drop(['species'], axis=1)
+
+X.head()
+
+# Gerar gráficos
+# Gráfico 1 - Sepal: sepal_length x sepal_width 
+eixo_x = X['sepal_length']
+eixo_y = X['sepal_width']
+plt.figure(figsize=(7,7));
+plt.scatter(eixo_x, eixo_y, s=40);
+plt.xlabel('sepal length');
+plt.ylabel('sepal width');
+plt.title('Sepal');
+
+# Gerar gráficos
+# Gráfico 2 - Petal: petal_length x petal_width 
+eixo_x = X['petal_length']
+eixo_y = X['petal_width']
+plt.figure(figsize=(7,7))
+plt.scatter(eixo_x, eixo_y, s=40);
+plt.xlabel('petal length');
+plt.ylabel('petal width');
+plt.title('petal');
+
+# Clustering usando k-means
+
+# Definir o modelo
+Clust_KMeans = KMeans(n_clusters=3, init='k-means++', random_state=2021)
+
+# Ajustar o Modelo aos Dados
+Clust_KMeans.fit(X)
+
+# Encontrar os grupos
+Grupos = Clust_KMeans.predict(X)
+# Gerar gráficos com cores pelos grupos encontrados
+# Sepal: sepal_length x sepal_width 
+eixo_x = X['sepal_length']
+eixo_y = X['sepal_width']
+plt.figure(figsize=(7,7))
+plt.scatter(eixo_x, eixo_y, c=Grupos, s=40);
+plt.xlabel('sepal length');
+plt.ylabel('sepal width');
+plt.title('Sepal');
+
+# Gerar gráficos com cores pelos grupos encontrados
+# Petal: petal_length x petal_width 
+eixo_x = X['petal_length']
+eixo_y = X['petal_width']
+plt.figure(figsize=(7,7))
+plt.scatter(eixo_x, eixo_y, c=Grupos, s=40);
+plt.xlabel('petal length');
+plt.ylabel('petal width');
+plt.title('petal');
+
+# Construir o gráfico K x WSS
+
+# Calcular WSS para vários K
+wss = []
+
+for i in range(1,11):
+    km = KMeans(n_clusters=i,
+                init = 'k-means++',
+                random_state=2021)
+    km.fit(X)
+    wss.append(km.inertia_)
+    
+ 
+# Construir um gráfico K x CSS, para escolher o melhor K ('Elbow Method')
+plt.figure(figsize=(10,7))
+plt.plot(range(1, 11), wss, marker='');
+plt.xlabel('Número de clusters (K)');
+plt.ylabel('CSS');
