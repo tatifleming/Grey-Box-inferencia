@@ -1,0 +1,72 @@
+# Leitura do conjunto de dados
+df = pd.read_csv('NOME_DO_ARQUIVO.csv')
+df.head()
+
+# Atributo meta: taxa_inf_m5: Taxa de infecção maiores ou iguais a 5 p.p. (0 ou 1)
+# lavoura: Espaçamento da lavoura (adensada ou larga)
+#tmax_pinf: Média das temperaturas máximas diárias no PINF
+#tmin_pinf: Média das temperaturas mínimas diárias no PINF
+#tmed_pinf: Média das temperaturas médias diárias no PINF
+#ur_pinf: Umidade Relativa do ar média diária no PINF
+#med_precip_pinf: Média das precipitações pluviais diárias no PINF
+#precip_pinf: Precipitação pluvial acumulada no PINF
+#dchuv_pinf: Número de dias chuvosos (>= 1 mm) no PINF
+#tmax_pi_pinf: Média das temperaturas máximas diárias no período de incubação para os dias do PINF
+#tmin_pi_pinf: Média das temperaturas mínimas diárias no período de incubação para os dias do PINF
+#tmed_pi_pinf: Média das temperaturas médias diárias no período de incubação para os dias do PINF
+
+
+# Separar atributos preditores(X) do atributo meta (y)
+y = df.taxa_inf_m5
+X = df.drop('taxa_inf_m5', axis=1)
+
+# Construir conjuntos de Treino e Test na proporção 70/30 (random_state = 2021) e estratificado pelo atributo meta
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=0.3, random_state = 2021, stratify = y)
+
+# Separar atributos numéricos (X_train_num, X_test_num) e categóricos (X_train_cat, X_test_cat) dos conjuntos de treino e teste
+X_train_num = X_train.select_dtypes(include=np.number)
+X_train_cat = X_train.select_dtypes(exclude=np.number)
+X_test_num = X_test.select_dtypes(include=np.number)
+X_test_cat = X_test.select_dtypes(exclude=np.number)
+
+# Normalizar (Z-Score) os atributos preditores numéricos do conjunto de treino (X_train) e aplicar a mesma transformação no conjunto de teste (X_test)
+# Definir o 'scaler' no X_train_num
+scaler = StandardScaler().fit(X_train_num)
+X_train_num_norm = pd.DataFrame(scaler.transform(X_train_num), columns=X_train_num.columns)
+# Usar no X_test a mesma operação feita para a normalização de X_train
+X_test_num_norm = pd.DataFrame(scaler.transform(X_test_num), columns=X_test_num.columns)
+
+# Codificar (Label Encoder) o atributo categórico
+# Definir o 'encoder'
+lab_enc = LabelEncoder().fit(np.ravel(X_train_cat))
+
+# Usar o 'encoder' nos atributos categóricos do conjunto de treino para transformar em um conjunto 'encoded'
+X_train_cat_norm = pd.DataFrame(lab_enc.transform(np.ravel(X_train_cat)), columns=X_train_cat.columns)
+
+# Usar o 'encoder' nos atributos categóricos do conjunto de teste para transformar em um conjunto 'encoded'
+X_test_cat_norm = pd.DataFrame(lab_enc.transform(np.ravel(X_test_cat)), columns=X_test_cat.columns)
+
+# Criar X_train_norm concatenando X_train_cat_norm e X_train_num_norm
+X_train_norm = pd.concat([X_train_cat_norm, X_train_num_norm], axis=1)
+
+# Criar X_test_norm concatenando X_test_cat_norm e X_test_num_norm
+X_test_norm = pd.concat([X_test_cat_norm, X_test_num_norm], axis=1)
+
+
+###### BASELINE PARA CLASSIFICAÇÃO
+
+#Estabelecimento de uma 'Baseline' para comparação do desempenho do modelo
+
+# Criar um objeto 'dummy' definindo estratégia para estimativa e ajustar ao conjunto de treino
+dummy = DummyClassifier(strategy='most_frequent').fit(X_train,y_train)
+
+# Fazer a predição no conjunto de teste utilizando o objeto definido e ajustado anteriormente
+y_pred_dummy = dummy.predict(X_test)
+
+# para problema de classificação, usa o X_test (acima), para regressão, a média
+
+# Calcular acurácia (acc), precisão (prec), sensbilidade (recall) e F1-Score da 'Baseline' criada utilizando 'Dummy'
+acc_dummy = accuracy_score(y_test, y_pred_dummy)
+prec_dummy = precision_score(y_test, y_pred_dummy)
+recall_dummy = recall_score(y_test, y_pred_dummy)
+f1_score_dummy = f1_score(y_test, y_pred_dummy)
