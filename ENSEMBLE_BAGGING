@@ -1,0 +1,73 @@
+############ CLASSIFICAÇÃO ##############
+
+
+# Otimizar hiperparâmetro 'n_estimators', utilizando Randomized Search (n_iter=20)
+# OBS: 'n_estimators' representa o número de árvores
+%%time
+
+# arange mostra o grid, busca de forma aleatória
+# Definir o grid dos hiperparâmetros (n_estimators variando de 10 a 100, de 2 em 2)
+faixa_param = {'n_estimators':np.arange(10,101,2)}
+n_iter = 20
+
+opt_params = rnd_hyper_tunning(BaggingClassifier(), faixa_param, n_iter) 
+print('Bagging opt_params:', opt_params)
+
+%%time
+
+# Construir o classificador com os hiperparâmetros otimizados e ajustar ao conjunto de treino
+bag_clf = BaggingClassifier(n_estimators=opt_params['n_estimators']).fit(X_train_norm, y_train)
+
+# Fazer predição no conjunto de teste
+y_pred_bag = bag_clf.predict(X_test_norm)
+
+# Avaliar o modelo
+# Acurácia, Precisão, Recall e F1-Score
+bag_acc, bag_prec, bag_recall, bag_f1_score = metrics_clf(y_test, y_pred_bag)
+
+# Apresentar Matriz de Confusão
+print('Matriz de Confusão - Bagging')
+print(pd.crosstab(y_test,y_pred_bag, rownames=['Obs'],colnames=['Pred'], margins=True))
+
+# Apresentar Relatório Geral do Modelo (classification_report)
+print(classification_report(y_test, y_pred_bag))
+
+# a ideia da heurística é dar um valor "aproximado"
+
+
+
+############ REGRESSÃO #################
+
+# Otimizar hiperparâmetro 'n_estimators', utilizando Randomized Search (n_iter=15)
+# OBS: 'n_estimators' representa o número de árvores
+%%time
+
+# Definir o grid dos hiperparâmetros (n_estimators variando de 10 a 100, de 2 em 2)
+# faça entre 10 a 100 árvores, de 2 em 2, rode 15 vezes (é pouco para esse dataset)
+# o objetivo é ter a confiança de que tenho algo próximo ao ótimo
+faixa_param = {'n_estimators': np.arange(10,101, 2)}
+n_iter = 15
+
+opt_params = rnd_hyper_tunning(BaggingRegressor(), faixa_param, n_iter)
+print('Bagging opt_params:', opt_params)
+
+%%time
+# Buscar o parâmetro ótimo
+# Construir o classificador com os hiperparâmetros otimizados e ajustar ao conjunto de treino
+bag_reg = BaggingRegressor(n_estimators=opt_params['n_estimators']).fit(X_train_norm, y_train)
+
+# Fazer predição no conjunto de teste
+y_pred_bag = bag_reg.predict(X_test_norm)
+
+# Avaliar o modelo
+
+# Calcular e apresentar R2, MAE e RMSE
+bag_r2, bag_mae, bag_rmse = metrics_reg(y_test, y_pred_bag)
+
+print('bag_r2: ', bag_r2)
+print('bag_MAE: ', bag_mae)
+print('bag_RMSE: ', bag_rmse)
+
+# preciso ter ordem de grandeza
+# estatística descritiva = estou descrevendo os dados
+# aqui estou olhando os dados para aprender
