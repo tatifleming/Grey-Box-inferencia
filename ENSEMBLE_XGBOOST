@@ -1,0 +1,86 @@
+### XGBOOST SEM SELEÇÃO DE ATRIBUTOS
+
+########## CLASSIFICAÇÃO ###############
+
+#######(eXtreme Gradient Boost)
+
+
+# Otimizar hiperparâmetros utilizando Randomized Search
+
+# - n_estimators: 100 a 500, variando de 100 em 100
+# - learning_rate: [0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9]
+# - max_depth: 2 a 10, variando de 2 em 2
+
+%%time
+
+# Definir o grid dos hiperparâmetros
+faixa_param = {'n_estimators':np.arange(100,501,100),
+               'learning_rate':[0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9],
+               'max_depth':np.arange(2,11,2)}
+
+n_iter = 50
+
+opt_params = rnd_hyper_tunning(xgb.XGBClassifier(), faixa_param, n_iter)
+print('XGBoost opt_params:', opt_params)
+
+%%time
+
+# Construir o classificador com os hiperparâmetros otimizados e ajustar ao conjunto de treino
+xgb_clf = xgb.XGBClassifier(n_estimators=opt_params['n_estimators'],
+                            learning_rate=opt_params['learning_rate'],
+                            max_depth=opt_params['max_depth']).fit(X_train_norm, y_train)
+
+# Fazer predição no conjunto de teste
+y_pred_xgb = xgb_clf.predict(X_test_norm)
+
+# Avaliar o modelo
+# Acurácia, Precisão, Recall e F1-Score
+xgb_acc, xgb_prec, xgb_recall, xgb_f1 = metrics_clf(y_test, y_pred_xgb)
+
+# Apresentar Matriz de Confusão
+print('Matriz de Confusão - XGB (eXtreme Gradient Boosting')
+print(pd.crosstab(y_test,y_pred_xgb, rownames=['Obs'],colnames=['Pred'], margins=True))
+
+# Apresentar Relatório Geral do Modelo (classification_report)
+print(classification_report(y_test, y_pred_xgb))
+
+
+############### REGRESSÃO ##################
+
+# Otimizar hiperparâmetros utilizando Randomized Search
+
+# - n_estimators: 100 a 500, variando de 100 em 100
+# - learning_rate: [0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9]
+# NÃO SERÁ OTIMIZADO - max_depth: 2 a 10, variando de 2 em 2
+
+%%time
+
+# Definir o grid dos hiperparâmetros
+faixa_param = {'n_estimators':np.arange(100,501,100),
+               'learning_rate':[0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9]}
+
+n_iter = 25
+
+# ele usa uma função objetivo com o gradiente
+
+opt_params = rnd_hyper_tunning(xgb.XGBRegressor(objective='reg:squarederror'), faixa_param, n_iter)
+print('Random Forest opt_params:', opt_params)
+
+%%time
+
+# Construir o classificador com os hiperparâmetros otimizados e ajustar ao conjunto de treino
+xgb_reg = xgb.XGBRegressor(objective='reg:squarederror',
+                           n_estimators=opt_params['n_estimators'],
+                           learning_rate=opt_params['learning_rate']).fit(X_train_norm, y_train)
+
+# Fazer predição no conjunto de teste
+y_pred_xgb = xgb_reg.predict(X_test_norm)
+
+# Avaliar o modelo
+
+# Calcular e apresentar R2, MAE e RMSE
+xgb_r2, xgb_mae, xgb_rmse = metrics_reg(y_test, y_pred_xgb)
+
+print('xgb_r2: ', xgb_r2)
+print('xgb_MAE: ', xgb_mae)
+print('xgb_RMSE: ', xgb_rmse)
