@@ -1,0 +1,121 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Importar KMeans
+
+from sklearn.cluster import KMeans
+
+# Vamos usar 'make_blobs' para gerar dados e ilustrar o uso do KMeans
+
+from sklearn.datasets import make_blobs
+
+
+
+## EXEMPLO 1
+
+# Gerar conjunto de dados (Verificar 'help' do make_blobs)
+# k é o número de grupos
+# gera 4 cluster, o X vai alocar o valor em cada cluster, o vetor y guarda em qual cluester e registro pertence
+# n_feature = número de dimensão
+# s é o tamanho do ponto
+
+k = 5
+
+X, y = make_blobs(n_samples=100, n_features=2, centers=k, cluster_std = 0.7, random_state = 2021)
+
+plt.scatter(X[:, 0], X[:, 1], s=40);
+
+# Verificar visualmente alguns pontos nos diferentes grupos
+for i in np.arange(0,21,2):
+  print(i, X[i,:],y[i])
+  
+  
+# Criar um objeto definindo o modelo
+# o default é kmeans++
+# antes era randômico
+# n_init diz quantas vezes rodar
+# max_iter é o máximo que ele poderá rodar até encontar
+# n jobs se vc estiver rodando no seu pc e tiver placa gráfica, poderá rodar em outro núcleo e fazer a paralelização
+
+Clust_Ex1 = KMeans(n_clusters=k)
+
+# Ajustar o Modelo aos Dados
+Clust_Ex1.fit(X)
+
+# Plotar o conjunto de dados coloridos por grupos ('clusters')
+# o predict aqui é semelhante ao supervisionado, mas diz que ele irá alocar cada registro um grupo
+Grupos_Ex1 = Clust_Ex1.predict(X)
+plt.scatter(X[:, 0], X[:, 1], c = Grupos_Ex1);
+
+
+
+### EXEMPLO 2
+
+# Gerar conjunto de dados (Verificar 'help' do make_blobs)
+X, y = make_blobs(n_samples = 100, centers=7, cluster_std = 0.5, random_state = 2021, n_features=2)
+plt.figure(figsize=(10,7))
+
+plt.scatter(X[:, 0], X[:, 1], s=25);
+
+# Definir o Modelo
+Clust_Ex2 = KMeans(n_clusters=6, init='k-means++')
+
+# Ajustar o Modelo aos Dados
+Clust_Ex2.fit(X)
+
+# Particionar o conjunto de dados em grupos ('clusters')
+Grupos = Clust_Ex2.predict(X)
+
+# Gráficos dos clusters colorindo para cada grupo
+plt.figure(figsize=(10,7))
+plt.scatter(X[:, 0], X[:, 1], c = Grupos);
+
+# Gráficos dos clusters colorindo para cada grupo e INCLUINDO OS CENTROS DOS CLUSTERS
+# para encontrar o centro do objeto
+plt.figure(figsize=(10,7))
+plt.scatter(X[:, 0], X[:, 1], c = Grupos, s = 25);
+centros = Clust_Ex2.cluster_centers_
+plt.scatter(x = centros[:,0], y = centros[:,1], c='black', s = 70, marker = 'v');
+
+# Cálculo do WSS é fornecido por 'inertia_'
+# WSS é o somatório "within squared sum", esperamos que seja o menor possível (compacticidade do cluster)
+
+Clust_Ex2.inertia_
+
+# Fazer o método do cotovelo
+# Calcular WSS para vários Ks
+wss = []
+for i in np.arange(1,11): 
+  km = KMeans(n_clusters=i, random_state=2021)
+  km.fit(X)
+  wss.append(km.inertia_)
+  
+# Construir um gráfico K x WSS, para escolher o melhor K ('Elbow Method')
+plt.figure(figsize=(10,7));
+plt.plot(np.arange(1, 11), wss, marker='o');
+plt.xlabel('Número de clusters (K)');
+plt.ylabel('CSS');
+
+
+# CENTRO GEOMÉTRICO DOS PONTOS
+# Medoide (ao invés de ser o centro geométrico, é o centro entre os grupos)
+# Construindo o Modelo com k = 2
+Clust_KMeans = KMeans(n_clusters=2, init='k-means++')
+
+# Ajustar o Modelo aos Dados
+Clust_KMeans.fit(X)
+
+# Particionar o conjunto de dados em grupos ('clusters')
+Grupos = Clust_KMeans.predict(X)
+
+# Gráficos dos clusters colorindo para cada grupo
+plt.figure(figsize=(10,7))
+plt.scatter(X[:, 0], X[:, 1], c = Grupos);
+
+centros = Clust_KMeans.cluster_centers_
+plt.scatter(x = centros[:,0], y = centros[:,1], c='black', s = 70, marker = 'v');
+
+### ASSOCIAR DRIVE AO COLAB FACILITA 
+from google.colab import drive
+drive.mount('/content/drive')
