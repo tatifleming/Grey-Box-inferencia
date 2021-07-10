@@ -1,0 +1,82 @@
+############ CLASSIFICAÇÃO ##############
+
+# Gradient Boost
+
+# Otimizar hiperparâmetros utilizando Randomized Search
+
+# - n_estimators: 100 a 500, variando de 100 em 100
+# - learning_rate: [0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9]
+# - max_depth: 2 a 10, variando de 2 em 2
+
+%%time
+
+# Definir o grid dos hiperparâmetros
+# estimators: números de vezes que quero que rode (nº de árvores)
+# learning rate = é onde ele errou e ele vai construindo árvores (pesos diferentes); eu digo os passos
+# vai rodar 25 vezes e vai dizer com quantas árvores é melhor
+faixa_param = {'n_estimators':np.arange(100,501,100),
+               'learning_rate':[0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9],
+               'max_depth':np.arange(2,11,2)}
+
+n_iter = 25
+
+opt_params = rnd_hyper_tunning(GradientBoostingClassifier(), faixa_param, n_iter)
+print('Gradient Boosting opt_params:', opt_params)
+
+%%time
+
+# Construir o classificador com os hiperparâmetros otimizados e ajustar ao conjunto de treino
+gboost_clf = GradientBoostingClassifier(n_estimators=opt_params['n_estimators'],
+                                        learning_rate=opt_params['learning_rate'],
+                                        max_depth=opt_params['max_depth']).fit(X_train_norm, y_train)
+
+# Fazer predição no conjunto de teste
+y_pred_gboost = gboost_clf.predict(X_test_norm)
+
+# Avaliar o modelo
+# Acurácia, Precisão, Recall e F1-Score
+gboost_acc, gboost_prec, gboost_recall, gboost_f1 = metrics_clf(y_test, y_pred_gboost)
+
+# Apresentar Matriz de Confusão
+print('Matriz de Confusão - Gradient Boosting')
+print(pd.crosstab(y_test,y_pred_gboost, rownames=['Obs'],colnames=['Pred'], margins=True))
+
+# Apresentar Relatório Geral do Modelo (classification_report)
+print(classification_report(y_test, y_pred_gboost))
+
+
+################# REGRESSÃO #################
+
+# Otimizar hiperparâmetros utilizando Randomized Search
+
+# - n_estimators: 100 a 500, variando de 100 em 100
+# - learning_rate: [0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9]
+# NÃO SERÁ OTIMIZADO - max_depth: 5 a 15, variando de 2 em 2 (por questão de diminuir o tempo)
+
+%%time
+
+# Definir o grid dos hiperparâmetros
+faixa_param = {'n_estimators':np.arange(100,501,100),
+               'learning_rate':[0.01, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9]}
+
+n_iter = 15
+
+opt_params = rnd_hyper_tunning(GradientBoostingRegressor(), faixa_param, n_iter)
+print('Gradient Boost opt_params:', opt_params)
+
+%%time
+
+# Construir o classificador com os hiperparâmetros otimizados e ajustar ao conjunto de treino
+gboost_reg = GradientBoostingRegressor(n_estimators=opt_params['n_estimators'],
+                                       learning_rate=opt_params['learning_rate']).fit(X_train_norm, y_train)
+
+# Fazer predição no conjunto de teste
+y_pred_gboost = gboost_reg.predict(X_test_norm)
+
+# Avaliar o modelo
+# Calcular e apresentar R2, MAE e RMSE
+gboost_r2, gboost_mae, gboost_rmse = metrics_reg(y_test, y_pred_gboost)
+
+print('gboost_r2: ', gboost_r2)
+print('gboost_MAE: ', gboost_mae)
+print('gboost_RMSE: ', gboost_rmse)
