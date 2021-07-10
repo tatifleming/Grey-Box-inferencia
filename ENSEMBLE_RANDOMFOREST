@@ -1,0 +1,88 @@
+############# CLASSIFICAÇÃO ##############
+
+# Otimizar hiperparâmetros utilizando Randomized Search
+
+# - n_estimators: 100 a 1000, variando de 100 em 100
+# - max_features: 5 a 20, variando de 2 em 2 (utilizar números inteiros) OU
+# - max_features: 10% a 80%, variando de 10% em 10% (utilizar valores percentuais entre 0.1 e 0.8)
+# OPCIONAL: Incluir max_depth: 2 a 12, variando de 2 em 2 (AUMENTA O NÚMERO DE POSSIBILIDADES)
+
+%%time
+
+# Definir o grid dos hiperparâmetros
+# são muitos hiperparâmetros
+# ele vai achar aqui uma combinação de árvores
+faixa_param = {'n_estimators':np.arange(100,1001,100),
+               'max_features':np.arange(0.1,0.8,0.1),
+               'max_depth':np.arange(2,13,2)}
+
+n_iter = 30
+
+opt_params = rnd_hyper_tunning(RandomForestClassifier(), faixa_param, n_iter) 
+print('Random Forest opt_params:', opt_params)
+
+# lembrando que não estou trabalhando com grid, mas com uma heurística
+
+%%time
+
+# Construir o classificador com os hiperparâmetros otimizados e ajustar ao conjunto de treino
+rf_clf = RandomForestClassifier(n_estimators=opt_params['n_estimators'],
+                                max_features=opt_params['max_features'],
+                                max_depth=opt_params['max_depth']).fit(X_train_norm, y_train)
+
+# Fazer predição no conjunto de teste
+y_pred_rf = rf_clf.predict(X_test_norm)
+
+# Avaliar o modelo
+# Acurácia, Precisão, Recall e F1-Score
+rf_acc, rf_prec, rf_recall, rf_f1_score = metrics_clf(y_test, y_pred_rf)
+
+# Apresentar Matriz de Confusão
+print('Matriz de Confusão - Random Forest')
+print(pd.crosstab(y_test,y_pred_rf, rownames=['Obs'],colnames=['Pred'], margins=True))
+
+# Apresentar Relatório Geral do Modelo (classification_report)
+print(classification_report(y_test, y_pred_rf))
+
+
+################### REGRESSÃO #####################
+
+# Otimizar hiperparâmetros utilizando Randomized Search
+# além do número de árvores, tem que dizer outras informações: 
+
+# - n_estimators: 100 a 500, variando de 100 em 100
+# - max_features: 10% a 80%, variando de 10% em 10% (utilizar valores percentuais entre 0.1 e 0.8)
+# - max_depth: 5 a 15, variando de 2 em 2
+
+
+%%time
+
+# max feature: porcentagem ??
+# Definir o grid dos hiperparâmetros
+faixa_param = {'n_estimators':np.arange(100,501,100),
+               'max_features':np.arange(0.1,0.81,0.1),
+               'max_depth':np.arange(5,16,2)}
+
+n_iter = 25
+
+opt_params = rnd_hyper_tunning(RandomForestRegressor(), faixa_param, n_iter)
+print('Random Forest opt_params:', opt_params)
+
+%%time
+
+# Construir o classificador com os hiperparâmetros otimizados e ajustar ao conjunto de treino
+rf_reg = RandomForestRegressor(n_estimators=opt_params['n_estimators'],
+                               max_features=opt_params['max_features'],
+                               max_depth=opt_params['max_depth']).fit(X_train_norm, y_train)
+
+# Fazer predição no conjunto de teste
+y_pred_rf = rf_reg.predict(X_test_norm)
+
+# Avaliar o modelo
+
+# Calcular e apresentar R2, MAE e RMSE
+rf_r2, rf_mae, rf_rmse = metrics_reg(y_test, y_pred_rf)
+
+print('rf_r2: ', rf_r2)
+print('rf_MAE: ', rf_mae)
+print('rf_RMSE: ', rf_rmse)
